@@ -7,7 +7,8 @@ import (
 )
 
 type GenericResponse struct {
-	Ok bool `json:"ok"`
+	Ok      bool   `json:"ok"`
+	Message string `json:"message,omitempty"`
 }
 
 type AllocateUploadSlotRequest struct {

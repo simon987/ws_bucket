@@ -2,11 +2,15 @@ package test
 
 import (
 	"bytes"
+	"crypto"
+	"crypto/hmac"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/simon987/ws_bucket/api"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 func Post(path string, x interface{}) *http.Response {
@@ -19,16 +23,13 @@ func Post(path string, x interface{}) *http.Response {
 	req, err := http.NewRequest("POST", "http://"+api.GetServerAddress()+path, buf)
 	handleErr(err)
 
-	//ts := time.Now().Format(time.RFC1123)
-	//
-	//mac := hmac.New(crypto.SHA256.New, worker.Secret)
-	//mac.Write(body)
-	//mac.Write([]byte(ts))
-	//sig := hex.EncodeToString(mac.Sum(nil))
-	//
-	//req.Header.Add("X-Worker-Id", strconv.FormatInt(worker.Id, 10))
-	//req.Header.Add("X-Signature", sig)
-	//req.Header.Add("Timestamp", ts)
+	ts := time.Now().Format(time.RFC1123)
+	mac := hmac.New(crypto.SHA256.New, []byte("default_secret"))
+	mac.Write(body)
+	mac.Write([]byte(ts))
+	sig := hex.EncodeToString(mac.Sum(nil))
+	req.Header.Add("X-Signature", sig)
+	req.Header.Add("Timestamp", ts)
 
 	r, err := s.Do(req)
 	handleErr(err)
@@ -42,6 +43,14 @@ func Get(path string, token string) *http.Response {
 
 	req, err := http.NewRequest("GET", "http://"+api.GetServerAddress()+path, nil)
 	handleErr(err)
+
+	ts := time.Now().Format(time.RFC1123)
+	mac := hmac.New(crypto.SHA256.New, []byte("default_secret"))
+	mac.Write([]byte(path))
+	mac.Write([]byte(ts))
+	sig := hex.EncodeToString(mac.Sum(nil))
+	req.Header.Add("X-Signature", sig)
+	req.Header.Add("Timestamp", ts)
 
 	req.Header.Set("X-Upload-Token", token)
 

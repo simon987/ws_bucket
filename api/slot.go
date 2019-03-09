@@ -22,10 +22,18 @@ var upgrader = websocket.FastHTTPUpgrader{
 
 func (api *WebApi) AllocateUploadSlot(ctx *fasthttp.RequestCtx) {
 
-	//todo auth
+	err := validateRequest(ctx)
+	if err != nil {
+		ctx.Response.Header.SetStatusCode(401)
+		Json(GenericResponse{
+			Ok:      false,
+			Message: err.Error(),
+		}, ctx)
+		return
+	}
 
 	req := &AllocateUploadSlotRequest{}
-	err := json.Unmarshal(ctx.Request.Body(), req)
+	err = json.Unmarshal(ctx.Request.Body(), req)
 	if err != nil {
 		ctx.Response.Header.SetStatusCode(400)
 		Json(GenericResponse{

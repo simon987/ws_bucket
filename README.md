@@ -7,9 +7,32 @@
 | `WS_BUCKET_LOGLEVEL` | `trace` |
 | `WS_BUCKET_CONNSTR` | `host=localhost user=ws_bucket dbname=ws_bucket password=ws_bucket sslmode=disable` |
 | `WS_BUCKET_DIALECT` | `postgres` |
+| `WS_BUCKET_SECRET` | `default_secret`* |
+
+\* You should change this value!
 
 ### Running tests
 ```bash
+export WS_BUCKET_ADDR=0.0.0.0:3021
+export WS_BUCKET_WORKDIR=.
+
 cd test/
 go test
+```
+
+### Auth
+Administration endpoints require HMAC_SHA256 authentication.
+Request header:
+```
+{
+    "Timestamp": <Current time (RFC1123)>
+    "X-Signature": <HMAC_SHA256(BODY + TIMESTAMP)>
+}
+```
+
+Upload endpoint requires a valid upload token:
+```
+{
+    "X-Upload-Token": <token>
+}
 ```
