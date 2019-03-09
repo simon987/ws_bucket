@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 )
@@ -49,6 +50,8 @@ func (req *AllocateUploadSlotRequest) IsValid() bool {
 		return false
 	}
 	if !strings.HasPrefix(pathAbs, WorkDir) {
+		fmt.Println(pathAbs)
+		fmt.Println(WorkDir)
 		return false
 	}
 

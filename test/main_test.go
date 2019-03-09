@@ -11,7 +11,7 @@ import (
 func TestMain(m *testing.M) {
 
 	//db, err := gorm.Open("postgres", "host=localhost user=ws_bucket dbname=ws_bucket password=ws_bucket sslmode=disable")
-	db, err := gorm.Open("sqlite3", ":memory:")
+	db, err := gorm.Open("sqlite3", "test.db")
 	if err != nil {
 		panic(err)
 	}

@@ -11,29 +11,8 @@ import (
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 )
-
-func TestWebsocketReturnsMotd(t *testing.T) {
-
-	id := uuid.New()
-	allocateUploadSlot(api.AllocateUploadSlotRequest{
-		FileName: "testmotd",
-		MaxSize:  0,
-		Token:    id.String(),
-	})
-
-	c := ws(id.String())
-	motd := &api.WebsocketMotd{}
-	err := c.ReadJSON(&motd)
-	handleErr(err)
-
-	if len(motd.Motd) <= 0 {
-		t.Error()
-	}
-	if len(motd.Info.Version) <= 0 {
-		t.Error()
-	}
-}
 
 func TestWebSocketUploadSmallFile(t *testing.T) {
 
@@ -46,10 +25,8 @@ func TestWebSocketUploadSmallFile(t *testing.T) {
 	})
 
 	c := ws(id.String())
-	_, _, err := c.ReadMessage()
-	handleErr(err)
 
-	err = c.WriteMessage(websocket.BinaryMessage, []byte("testuploadsmallfile"))
+	err := c.WriteMessage(websocket.BinaryMessage, []byte("testuploadsmallfile"))
 	handleErr(err)
 
 	err = c.Close()
@@ -73,18 +50,21 @@ func TestWebSocketUploadOverwritesFile(t *testing.T) {
 	})
 
 	c := ws(id.String())
-	_, _, err := c.ReadMessage()
-	handleErr(err)
 
-	err = c.WriteMessage(websocket.BinaryMessage, []byte("testuploadsmallfile"))
+	err := c.WriteMessage(websocket.BinaryMessage, []byte("testuploadsmallfile"))
 	handleErr(err)
 
 	err = c.Close()
 	handleErr(err)
 
+	time.Sleep(time.Millisecond * 50)
+	resp := readUploadSlot(id.String())
+
+	if bytes.Compare(resp, []byte("testuploadsmallfile")) != 0 {
+		t.Error()
+	}
+
 	c1 := ws(id.String())
-	_, _, err = c1.ReadMessage()
-	handleErr(err)
 
 	err = c1.WriteMessage(websocket.BinaryMessage, []byte("newvalue"))
 	handleErr(err)
@@ -92,7 +72,9 @@ func TestWebSocketUploadOverwritesFile(t *testing.T) {
 	err = c1.Close()
 	handleErr(err)
 
-	resp := readUploadSlot(id.String())
+	time.Sleep(time.Millisecond * 50)
+
+	resp = readUploadSlot(id.String())
 
 	if bytes.Compare(resp, []byte("newvalue")) != 0 {
 		t.Error()
@@ -110,14 +92,12 @@ func TestWebSocketUploadLargeFile(t *testing.T) {
 	})
 
 	c := ws(id.String())
-	_, _, err := c.ReadMessage()
-	handleErr(err)
 
 	chunk := make([]byte, 100000)
 	_ = copy(chunk, "test")
 	_ = c.WriteMessage(websocket.BinaryMessage, chunk)
 
-	err = c.Close()
+	err := c.Close()
 	handleErr(err)
 
 	resp := readUploadSlot(id.String())
@@ -138,14 +118,12 @@ func TestWebSocketUploadMaxSize(t *testing.T) {
 	})
 
 	c := ws(id.String())
-	_, _, err := c.ReadMessage()
-	handleErr(err)
 
 	chunk := make([]byte, 100000)
 	_ = copy(chunk, "test")
 	_ = c.WriteMessage(websocket.BinaryMessage, chunk)
 
-	err = c.Close()
+	err := c.Close()
 	handleErr(err)
 
 	resp := readUploadSlot(id.String())
@@ -157,6 +135,7 @@ func TestWebSocketUploadMaxSize(t *testing.T) {
 
 func readUploadSlot(token string) []byte {
 
+	time.Sleep(time.Millisecond * 20)
 	r := Get("/slot", token)
 
 	data, err := ioutil.ReadAll(r.Body)
@@ -174,6 +153,8 @@ func ws(slot string) *websocket.Conn {
 	header.Add("X-Upload-Token", slot)
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), header)
 	handleErr(err)
+
+	c.EnableWriteCompression(true)
 
 	return c
 }

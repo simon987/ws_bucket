@@ -25,7 +25,7 @@ func (api *WebApi) AllocateUploadSlot(ctx *fasthttp.RequestCtx) {
 	req := &AllocateUploadSlotRequest{}
 	err := json.Unmarshal(ctx.Request.Body(), req)
 	if err != nil {
-		ctx.Response.SetStatusCode(400)
+		ctx.Response.Header.SetStatusCode(400)
 		Json(GenericResponse{
 			Ok: false,
 		}, ctx)
@@ -33,7 +33,7 @@ func (api *WebApi) AllocateUploadSlot(ctx *fasthttp.RequestCtx) {
 	}
 
 	if !req.IsValid() {
-		ctx.Response.SetStatusCode(400)
+		ctx.Response.Header.SetStatusCode(400)
 		Json(CreateClientResponse{
 			Ok: false,
 		}, ctx)
@@ -54,7 +54,7 @@ func (api *WebApi) Upload(ctx *fasthttp.RequestCtx) {
 	err := api.db.Where("token=?", token).First(&slot).Error
 	if err != nil {
 		ctx.Response.Header.SetStatusCode(400)
-		logrus.WithFields(logrus.Fields{
+		logrus.WithError(err).WithFields(logrus.Fields{
 			"token": token,
 		}).Warning("Upload slot not found")
 		return
@@ -66,11 +66,6 @@ func (api *WebApi) Upload(ctx *fasthttp.RequestCtx) {
 
 	err = upgrader.Upgrade(ctx, func(ws *websocket.Conn) {
 		defer ws.Close()
-
-		err := ws.WritePreparedMessage(api.MotdMessage)
-		if err != nil {
-			panic(err)
-		}
 
 		mt, reader, err := ws.NextReader()
 		if err != nil {
@@ -103,6 +98,8 @@ func (api *WebApi) Upload(ctx *fasthttp.RequestCtx) {
 			_, _ = fp.Write(buf[:toWrite])
 			if err == io.EOF {
 				break
+			} else if err != nil {
+				panic(err)
 			}
 			totalRead += int64(read)
 		}
@@ -130,7 +127,7 @@ func (api *WebApi) ReadUploadSlot(ctx *fasthttp.RequestCtx) {
 
 	if err != nil {
 		ctx.Response.Header.SetStatusCode(404)
-		logrus.WithFields(logrus.Fields{
+		logrus.WithError(err).WithFields(logrus.Fields{
 			"token": tokenStr,
 		}).Warning("Upload slot not found")
 		return
@@ -160,6 +157,10 @@ func (api *WebApi) ReadUploadSlot(ctx *fasthttp.RequestCtx) {
 		if err != nil {
 			panic(err)
 		}
+	}
+	err = fp.Close()
+	if err != nil {
+		panic(err)
 	}
 	mu.(*sync.RWMutex).RUnlock()
 }

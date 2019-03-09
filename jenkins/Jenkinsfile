@@ -1,0 +1,71 @@
+def remote = [:]
+remote.name = 'remote'
+remote.host = 'localhost'
+remote.user = 'simon'
+remote.identityFile = '/var/lib/jenkins/.ssh/id_rsa'
+remote.knownHosts = '/var/lib/jenkins/.ssh/known_hosts'
+remote.allowAnyHosts = true
+remote.retryCount = 3
+remote.retryWaitSec = 3
+logLevel = 'FINER'
+
+pipeline {
+    agent none
+    environment {
+        GOOS='linux'
+        CGO_ENABLED='1'
+        HOME='.'
+        WS_BUCKET_ADDR='127.0.0.1:3021'
+        WS_BUCKET_WORKDIR='./data/'
+    }
+    stages {
+        stage('Parallel build & test') {
+            failFast true
+            parallel {
+                stage('Build - api') {
+                    agent {
+                        docker {
+                            image 'golang:latest'
+                            args '--network "host"'
+                        }
+                    }
+                    steps {
+                        sh 'mkdir -p /go/src/github.com/simon987/ws_bucket'
+                        sh 'cp -r api main.go "/go/src/github.com/simon987/ws_bucket"'
+                        sh 'cd /go/src/github.com/simon987/ws_bucket && go get ./...'
+                        sh 'cd /go/src/github.com/simon987/ws_bucket && go build -a -installsuffix cgo -o "${WORKSPACE}/ws_bucket" .'
+                        stash includes: 'ws_bucket', name: 'apidist'
+                    }
+                }
+                stage('Test - api') {
+                    agent {
+                        docker {
+                            image 'golang:latest'
+                            args '--network "host"'
+                        }
+                    }
+                    steps {
+                        sh 'mkdir -p /go/src/github.com/simon987/ws_bucket'
+                        sh 'cp -r api test main.go "/go/src/github.com/simon987/ws_bucket"'
+                        sh 'cd /go/src/github.com/simon987/ws_bucket/ && go get -t ./test/...'
+                        sh 'cd /go/src/github.com/simon987/ws_bucket/test && go test .'
+                    }
+                }
+            }
+        }
+        stage('Deploy') {
+            agent none
+            steps {
+                node('master') {
+                    unstash 'apidist'
+                    sshCommand remote: remote, command: "cd ws_bucket && rm -rf ws_bucket deploy.sh"
+                    sshPut remote: remote, from: 'ws_bucket', into: 'ws_bucket/ws_bucket'
+                    sshPut remote: remote, from: 'jenkins/deploy.sh', into: 'ws_bucket/'
+                    sshCommand remote: remote, command: 'chmod +x ws_bucket/deploy.sh && ./ws_bucket/deploy.sh'
+                }
+            }
+        }
+    }
+}
+
+

@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 )
 
-var WorkDir, _ = filepath.Abs("./data/")
+var WorkDir = getWorkDir()
 
 type Info struct {
 	Name    string `json:"name"`
@@ -66,6 +66,10 @@ func LogRequestMiddleware(h fasthttp.RequestHandler) fasthttp.RequestHandler {
 }
 
 func New(db *gorm.DB) *WebApi {
+
+	if _, err := os.Stat(WorkDir); err != nil && os.IsNotExist(err) {
+		_ = os.Mkdir(WorkDir, 0700)
+	}
 
 	api := &WebApi{}
 
@@ -132,5 +136,16 @@ func getLogLevel() logrus.Level {
 			panic(err)
 		}
 		return level
+	}
+}
+
+func getWorkDir() string {
+	workDir := os.Getenv("WS_BUCKET_WORKDIR")
+	if workDir == "" {
+		path, _ := filepath.Abs("./data")
+		return path
+	} else {
+		path, _ := filepath.Abs(workDir)
+		return path
 	}
 }
