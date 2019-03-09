@@ -78,8 +78,6 @@ func New(db *gorm.DB) *WebApi {
 	router := fasthttprouter.New()
 	router.GET("/", LogRequestMiddleware(Index))
 
-	router.POST("/client", LogRequestMiddleware(api.CreateClient))
-
 	router.POST("/slot", LogRequestMiddleware(api.AllocateUploadSlot))
 	router.GET("/slot", LogRequestMiddleware(api.ReadUploadSlot))
 	router.GET("/upload", LogRequestMiddleware(api.Upload))
@@ -90,7 +88,6 @@ func New(db *gorm.DB) *WebApi {
 	}
 
 	api.db = db
-	db.AutoMigrate(&Client{})
 	db.AutoMigrate(&UploadSlot{})
 
 	api.setupMotd()

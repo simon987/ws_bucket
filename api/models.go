@@ -10,25 +10,6 @@ type GenericResponse struct {
 	Ok bool `json:"ok"`
 }
 
-type CreateClientRequest struct {
-	Alias string `json:"alias"`
-}
-
-func (req *CreateClientRequest) IsValid() bool {
-	return len(req.Alias) > 3
-}
-
-type CreateClientResponse struct {
-	Ok     bool   `json:"ok"`
-	Secret string `json:"secret,omitempty"`
-}
-
-type Client struct {
-	ID     int64
-	Alias  string `json:"alias"`
-	Secret string `json:"secret"`
-}
-
 type AllocateUploadSlotRequest struct {
 	Token    string `json:"token"`
 	MaxSize  int64  `json:"max_size"`
