@@ -1,3 +1,5 @@
+[![Build Status](https://ci.simon987.net/buildStatus/icon?job=ws_bucket)](https://ci.simon987.net/job/ws_bucket/) [![CodeFactor](https://www.codefactor.io/repository/github/simon987/ws_bucket/badge)](https://www.codefactor.io/repository/github/simon987/ws_bucket)
+
 ### Environment variables
 
 | Name | Default |
