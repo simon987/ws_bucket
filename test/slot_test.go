@@ -1,8 +1,13 @@
 package test
 
 import (
+	"bytes"
+	"github.com/fasthttp/websocket"
 	"github.com/simon987/ws_bucket/api"
+	"io/ioutil"
+	"net/http"
 	"testing"
+	"time"
 )
 
 func TestAllocateUploadInvalidMaxSize(t *testing.T) {
@@ -63,6 +68,33 @@ func TestDuplicateUploadSlot(t *testing.T) {
 	}).Ok != false {
 		t.Error()
 	}
+}
+
+func TestTokenInQueryString(t *testing.T) {
+
+	if allocateUploadSlot(api.AllocateUploadSlotRequest{
+		FileName: "test.png",
+		Token:    "testquery",
+		MaxSize:  100,
+	}).Ok != true {
+		t.Error()
+	}
+
+	conn := ws("testquery")
+	conn.WriteMessage(websocket.BinaryMessage, []byte("test"))
+	conn.Close()
+
+	time.Sleep(time.Millisecond * 20)
+	r, err := http.Get("http://" + api.GetServerAddress() + "/slot?token=testquery")
+	handleErr(err)
+
+	data, err := ioutil.ReadAll(r.Body)
+	handleErr(err)
+
+	if bytes.Compare(data, []byte("test")) != 0 {
+		t.Error()
+	}
+
 }
 
 func allocateUploadSlot(request api.AllocateUploadSlotRequest) (ar *api.GenericResponse) {
