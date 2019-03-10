@@ -24,11 +24,6 @@ var info = Info{
 	Version: "1.0",
 }
 
-var motd = WebsocketMotd{
-	Info: info,
-	Motd: "Hello, world",
-}
-
 type WebApi struct {
 	server      fasthttp.Server
 	db          *gorm.DB
@@ -90,16 +85,7 @@ func New(db *gorm.DB) *WebApi {
 	api.db = db
 	db.AutoMigrate(&UploadSlot{})
 
-	api.setupMotd()
-
 	return api
-}
-
-func (api *WebApi) setupMotd() {
-	var data []byte
-	data, _ = json.Marshal(motd)
-	motdMsg, _ := websocket.NewPreparedMessage(websocket.TextMessage, data)
-	api.MotdMessage = motdMsg
 }
 
 func (api *WebApi) Run() {
