@@ -4,6 +4,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/simon987/ws_bucket/api"
+	"os"
 	"testing"
 	"time"
 )
@@ -22,4 +23,5 @@ func TestMain(m *testing.M) {
 	time.Sleep(time.Millisecond * 100)
 
 	m.Run()
+	_ = os.Remove("test.db")
 }

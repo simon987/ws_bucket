@@ -46,6 +46,25 @@ func TestAllocateUploadSlotUnsafePath(t *testing.T) {
 	}
 }
 
+func TestDuplicateUploadSlot(t *testing.T) {
+
+	if allocateUploadSlot(api.AllocateUploadSlotRequest{
+		FileName: "test.png",
+		Token:    "testdupe",
+		MaxSize:  100,
+	}).Ok != true {
+		t.Error()
+	}
+
+	if allocateUploadSlot(api.AllocateUploadSlotRequest{
+		FileName: "test.png",
+		Token:    "testdupe",
+		MaxSize:  100,
+	}).Ok != false {
+		t.Error()
+	}
+}
+
 func allocateUploadSlot(request api.AllocateUploadSlotRequest) (ar *api.GenericResponse) {
 	resp := Post("/slot", request)
 	UnmarshalResponse(resp, &ar)

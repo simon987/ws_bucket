@@ -53,11 +53,18 @@ func (api *WebApi) AllocateUploadSlot(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	api.allocateUploadSlot(req)
+	err = api.allocateUploadSlot(req)
 
-	Json(GenericResponse{
-		Ok: true,
-	}, ctx)
+	if err == nil {
+		Json(GenericResponse{
+			Ok: true,
+		}, ctx)
+	} else {
+		Json(GenericResponse{
+			Ok:      false,
+			Message: err.Error(),
+		}, ctx)
+	}
 }
 
 func (api *WebApi) Upload(ctx *fasthttp.RequestCtx) {
@@ -178,7 +185,7 @@ func (api *WebApi) ReadUploadSlot(ctx *fasthttp.RequestCtx) {
 	mu.(*sync.RWMutex).RUnlock()
 }
 
-func (api *WebApi) allocateUploadSlot(req *AllocateUploadSlotRequest) {
+func (api *WebApi) allocateUploadSlot(req *AllocateUploadSlotRequest) error {
 
 	slot := &UploadSlot{
 		MaxSize:  req.MaxSize,
@@ -190,5 +197,5 @@ func (api *WebApi) allocateUploadSlot(req *AllocateUploadSlotRequest) {
 		"slot": slot,
 	}).Info("Allocated new upload slot")
 
-	api.db.Create(slot)
+	return api.db.Create(slot).Error
 }
