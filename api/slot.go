@@ -18,6 +18,9 @@ var upgrader = websocket.FastHTTPUpgrader{
 	ReadBufferSize:    WsBufferSize,
 	WriteBufferSize:   WsBufferSize,
 	EnableCompression: true,
+	CheckOrigin: func(ctx *fasthttp.RequestCtx) bool {
+		return true
+	},
 }
 
 func (api *WebApi) AllocateUploadSlot(ctx *fasthttp.RequestCtx) {
@@ -79,7 +82,10 @@ func (api *WebApi) Upload(ctx *fasthttp.RequestCtx) {
 
 		mt, reader, err := ws.NextReader()
 		if err != nil {
-			panic(err)
+			logrus.WithFields(logrus.Fields{
+				"token": token,
+			}).Warning("Client disconnected before sending the first byte")
+			return
 		}
 		if mt != websocket.BinaryMessage {
 			return
@@ -90,7 +96,7 @@ func (api *WebApi) Upload(ctx *fasthttp.RequestCtx) {
 		path := filepath.Join(WorkDir, slot.FileName)
 		fp, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 		if err != nil {
-			panic(err)
+			logrus.WithError(err).Error("Error while opening file for writing")
 		}
 
 		buf := make([]byte, WsBufferSize)
@@ -108,8 +114,6 @@ func (api *WebApi) Upload(ctx *fasthttp.RequestCtx) {
 			_, _ = fp.Write(buf[:toWrite])
 			if err == io.EOF {
 				break
-			} else if err != nil {
-				panic(err)
 			}
 			totalRead += int64(read)
 		}
@@ -119,12 +123,12 @@ func (api *WebApi) Upload(ctx *fasthttp.RequestCtx) {
 		}).Info("Finished reading")
 		err = fp.Close()
 		if err != nil {
-			panic(err)
+			logrus.WithError(err).Error("Error while closing file")
 		}
 		mu.(*sync.RWMutex).Unlock()
 	})
 	if err != nil {
-		panic(err)
+		logrus.WithError(err).Error("Error while upgrading connexion")
 	}
 }
 
@@ -153,7 +157,9 @@ func (api *WebApi) ReadUploadSlot(ctx *fasthttp.RequestCtx) {
 	mu.(*sync.RWMutex).RLock()
 	fp, err := os.OpenFile(path, os.O_RDONLY, 0600)
 	if err != nil {
-		panic(err)
+		logrus.WithError(err).Error("Error while opening file for reading")
+		mu.(*sync.RWMutex).RUnlock()
+		return
 	}
 
 	buf := make([]byte, WsBufferSize)
@@ -164,13 +170,10 @@ func (api *WebApi) ReadUploadSlot(ctx *fasthttp.RequestCtx) {
 		if err == io.EOF {
 			break
 		}
-		if err != nil {
-			panic(err)
-		}
 	}
 	err = fp.Close()
 	if err != nil {
-		panic(err)
+		logrus.WithError(err).Error("Error while closing file for reading")
 	}
 	mu.(*sync.RWMutex).RUnlock()
 }
