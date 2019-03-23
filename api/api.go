@@ -6,10 +6,12 @@ import (
 	"github.com/fasthttp/websocket"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"github.com/robfig/cron"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 var WorkDir = getWorkDir()
@@ -28,6 +30,7 @@ type WebApi struct {
 	server      fasthttp.Server
 	db          *gorm.DB
 	MotdMessage *websocket.PreparedMessage
+	Cron        *cron.Cron
 }
 
 func Index(ctx *fasthttp.RequestCtx) {
@@ -67,6 +70,7 @@ func New(db *gorm.DB) *WebApi {
 	}
 
 	api := &WebApi{}
+	api.Cron = cron.New()
 
 	logrus.SetLevel(getLogLevel())
 
@@ -90,6 +94,7 @@ func New(db *gorm.DB) *WebApi {
 
 func (api *WebApi) Run() {
 	address := GetServerAddress()
+	api.setupCronJobs()
 
 	logrus.WithFields(logrus.Fields{
 		"addr": address,
@@ -100,7 +105,20 @@ func (api *WebApi) Run() {
 		logrus.Fatalf("Error in ListenAndServe: %s", err)
 	}
 }
+func (api *WebApi) setupCronJobs() {
+	duration, _ := time.ParseDuration("5m")
+	api.Cron = cron.New()
+	schedule := cron.Every(duration)
+	api.Cron.Schedule(schedule, cron.FuncJob(api.DisposeStaleUploadSlots))
 
+	api.Cron.Start()
+
+	logrus.WithFields(logrus.Fields{
+		"every": duration,
+	}).Info("Scheduled job for DisposeStaleUploadSlots")
+}
+
+//TODO: Move those to a different file/package
 func GetServerAddress() string {
 	serverAddress := os.Getenv("WS_BUCKET_ADDR")
 	if serverAddress == "" {

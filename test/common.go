@@ -10,10 +10,16 @@ import (
 	"github.com/simon987/ws_bucket/api"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"time"
 )
 
 func Post(path string, x interface{}) *http.Response {
+
+	secret := os.Getenv("WS_BUCKET_SECRET")
+	if secret == "" {
+		secret = "default_secret"
+	}
 
 	s := http.Client{}
 
@@ -24,7 +30,7 @@ func Post(path string, x interface{}) *http.Response {
 	handleErr(err)
 
 	ts := time.Now().Format(time.RFC1123)
-	mac := hmac.New(crypto.SHA256.New, []byte("default_secret"))
+	mac := hmac.New(crypto.SHA256.New, []byte(secret))
 	mac.Write(body)
 	mac.Write([]byte(ts))
 	sig := hex.EncodeToString(mac.Sum(nil))
@@ -39,13 +45,18 @@ func Post(path string, x interface{}) *http.Response {
 
 func Get(path string, token string) *http.Response {
 
+	secret := os.Getenv("WS_BUCKET_SECRET")
+	if secret == "" {
+		secret = "default_secret"
+	}
+
 	s := http.Client{}
 
 	req, err := http.NewRequest("GET", "http://"+api.GetServerAddress()+path, nil)
 	handleErr(err)
 
 	ts := time.Now().Format(time.RFC1123)
-	mac := hmac.New(crypto.SHA256.New, []byte("default_secret"))
+	mac := hmac.New(crypto.SHA256.New, []byte(secret))
 	mac.Write([]byte(path))
 	mac.Write([]byte(ts))
 	sig := hex.EncodeToString(mac.Sum(nil))

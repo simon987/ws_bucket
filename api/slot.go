@@ -7,7 +7,9 @@ import (
 	"github.com/valyala/fasthttp"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -133,10 +135,30 @@ func (api *WebApi) Upload(ctx *fasthttp.RequestCtx) {
 			logrus.WithError(err).Error("Error while closing file")
 		}
 		mu.(*sync.RWMutex).Unlock()
+		mu.(*sync.RWMutex).RLock()
+
+		executeUploadHook(slot)
+
+		mu.(*sync.RWMutex).RUnlock()
 	})
 	if err != nil {
 		logrus.WithError(err).Error("Error while upgrading connexion")
 	}
+}
+
+func executeUploadHook(slot UploadSlot) {
+
+	path := filepath.Join(WorkDir, slot.FileName)
+
+	commandStr := strings.Replace(slot.UploadHook, "$1", "\""+path+"\"", -1)
+	cmd := exec.Command("bash", "-c", commandStr)
+	output, err := cmd.CombinedOutput()
+
+	logrus.WithFields(logrus.Fields{
+		"output":     string(output),
+		"err":        err,
+		"commandStr": commandStr,
+	}).Info("Execute upload hook")
 }
 
 func (api *WebApi) ReadUploadSlot(ctx *fasthttp.RequestCtx) {
@@ -191,9 +213,11 @@ func (api *WebApi) ReadUploadSlot(ctx *fasthttp.RequestCtx) {
 func (api *WebApi) allocateUploadSlot(req *AllocateUploadSlotRequest) error {
 
 	slot := &UploadSlot{
-		MaxSize:  req.MaxSize,
-		FileName: req.FileName,
-		Token:    req.Token,
+		MaxSize:       req.MaxSize,
+		FileName:      req.FileName,
+		Token:         req.Token,
+		ToDisposeDate: req.ToDisposeDate,
+		UploadHook:    req.UploadHook,
 	}
 
 	logrus.WithFields(logrus.Fields{

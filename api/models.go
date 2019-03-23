@@ -12,9 +12,11 @@ type GenericResponse struct {
 }
 
 type AllocateUploadSlotRequest struct {
-	Token    string `json:"token"`
-	MaxSize  int64  `json:"max_size"`
-	FileName string `json:"file_name"`
+	Token         string `json:"token"`
+	MaxSize       int64  `json:"max_size"`
+	FileName      string `json:"file_name"`
+	ToDisposeDate int64  `json:"to_dispose_date"`
+	UploadHook    string `json:"upload_hook"`
 }
 
 func (req *AllocateUploadSlotRequest) IsValid() bool {
@@ -45,9 +47,11 @@ func (req *AllocateUploadSlotRequest) IsValid() bool {
 }
 
 type UploadSlot struct {
-	MaxSize  int64  `json:"max_size"`
-	Token    string `gorm:"primary_key",json:"token"`
-	FileName string `json:"file_name"`
+	MaxSize       int64  `json:"max_size"`
+	Token         string `gorm:"primary_key",json:"token"`
+	FileName      string `json:"file_name"`
+	ToDisposeDate int64  `json:"to_dispose_date"`
+	UploadHook    string `json:"upload_hook"`
 }
 
 type WebsocketMotd struct {
