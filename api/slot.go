@@ -72,6 +72,11 @@ func (api *WebApi) AllocateUploadSlot(ctx *fasthttp.RequestCtx) {
 func (api *WebApi) Upload(ctx *fasthttp.RequestCtx) {
 
 	token := string(ctx.Request.Header.Peek("X-Upload-Token"))
+
+	if token == "" {
+		token = string(ctx.Request.URI().QueryArgs().Peek("token"))
+	}
+
 	slot := UploadSlot{}
 	err := api.db.Where("token=?", token).First(&slot).Error
 	if err != nil {
