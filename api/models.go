@@ -11,6 +11,10 @@ type GenericResponse struct {
 	Message string `json:"message,omitempty"`
 }
 
+type GetUploadSlotResponse struct {
+	UploadSlot `json:"upload_slot"`
+}
+
 type AllocateUploadSlotRequest struct {
 	Token         string `json:"token"`
 	MaxSize       int64  `json:"max_size"`

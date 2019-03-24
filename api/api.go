@@ -79,6 +79,7 @@ func New(db *gorm.DB) *WebApi {
 
 	router.POST("/slot", LogRequestMiddleware(api.AllocateUploadSlot))
 	router.GET("/slot", LogRequestMiddleware(api.ReadUploadSlot))
+	router.GET("/slot_info", LogRequestMiddleware(api.UploadSlotInfo))
 	router.GET("/upload", LogRequestMiddleware(api.Upload))
 
 	api.server = fasthttp.Server{

@@ -166,6 +166,28 @@ func executeUploadHook(slot UploadSlot) {
 	}).Info("Execute upload hook")
 }
 
+func (api *WebApi) UploadSlotInfo(ctx *fasthttp.RequestCtx) {
+	tokenStr := string(ctx.Request.Header.Peek("X-Upload-Token"))
+	if tokenStr == "" {
+		tokenStr = string(ctx.Request.URI().QueryArgs().Peek("token"))
+	}
+
+	slot := UploadSlot{}
+	err := api.db.Where("token=?", tokenStr).First(&slot).Error
+
+	if err != nil {
+		ctx.Response.Header.SetStatusCode(404)
+		logrus.WithError(err).WithFields(logrus.Fields{
+			"token": tokenStr,
+		}).Warning("Upload slot not found")
+		return
+	}
+
+	Json(GetUploadSlotResponse{
+		UploadSlot: slot,
+	}, ctx)
+	return
+}
 func (api *WebApi) ReadUploadSlot(ctx *fasthttp.RequestCtx) {
 
 	tokenStr := string(ctx.Request.Header.Peek("X-Upload-Token"))

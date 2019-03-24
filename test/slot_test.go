@@ -97,8 +97,37 @@ func TestTokenInQueryString(t *testing.T) {
 
 }
 
+func TestUploadSlotInfo(t *testing.T) {
+
+	if allocateUploadSlot(api.AllocateUploadSlotRequest{
+		FileName: "testuploadslotinfo.png",
+		Token:    "testuploadslotinfo",
+		MaxSize:  123,
+	}).Ok != true {
+		t.Error()
+	}
+
+	resp := getSlotInfo("testuploadslotinfo")
+
+	if resp.FileName != "testuploadslotinfo.png" {
+		t.Error()
+	}
+	if resp.Token != "testuploadslotinfo" {
+		t.Error()
+	}
+	if resp.MaxSize != 123 {
+		t.Error()
+	}
+}
+
 func allocateUploadSlot(request api.AllocateUploadSlotRequest) (ar *api.GenericResponse) {
 	resp := Post("/slot", request)
+	UnmarshalResponse(resp, &ar)
+	return
+}
+
+func getSlotInfo(token string) (ar *api.GetUploadSlotResponse) {
+	resp := Get("/slot_info", token)
 	UnmarshalResponse(resp, &ar)
 	return
 }
