@@ -59,7 +59,7 @@ pipeline {
                     sshCommand remote: remote, command: "cd ws_bucket && rm -rf ws_bucket deploy.sh"
                     sshPut remote: remote, from: 'ws_bucket', into: 'ws_bucket/ws_bucket'
                     sshPut remote: remote, from: 'jenkins/deploy.sh', into: 'ws_bucket/'
-                    sshCommand remote: remote, command: 'chmod +x ws_bucket/deploy.sh ./ws_bucket/deploy.sh'
+                    sshCommand remote: remote, command: 'chmod +x ws_bucket/deploy.sh && ws_bucket/deploy.sh'
                 }
             }
         }
