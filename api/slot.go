@@ -153,6 +153,10 @@ func (api *WebApi) Upload(ctx *fasthttp.RequestCtx) {
 
 func executeUploadHook(slot UploadSlot) {
 
+	if slot.UploadHook == "" {
+		return
+	}
+
 	path := filepath.Join(WorkDir, slot.FileName)
 
 	commandStr := strings.Replace(slot.UploadHook, "$1", "\""+path+"\"", -1)
