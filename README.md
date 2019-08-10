@@ -1,5 +1,11 @@
 [![Build Status](https://ci.simon987.net/buildStatus/icon?job=ws_bucket)](https://ci.simon987.net/job/ws_bucket/) [![CodeFactor](https://www.codefactor.io/repository/github/simon987/ws_bucket/badge)](https://www.codefactor.io/repository/github/simon987/ws_bucket)
 
+### Docker example
+
+```bash
+docker run --rm -v $PWD/data:/data -p 3020:3020 -e WS_BUCKET_SECRET=secret simon987/ws_bucket
+```
+
 ### Environment variables
 
 | Name | Default |

@@ -6,6 +6,7 @@ import (
 	"github.com/fasthttp/websocket"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/robfig/cron"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
